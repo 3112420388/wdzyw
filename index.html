@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专业授权码生成器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.97);
+            width: 100%;
+            max-width: 500px;
+            border-radius: 25px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            padding: 35px 30px;
+            position: relative;
+        }
+        
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(to right, #7e57c2, #26a69a, #ff7043);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        h1 {
+            color: #5e35b1;
+            font-size: 2.3rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            text-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+        
+        .description {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        .input-group {
+            margin-bottom: 28px;
+            position: relative;
+        }
+        
+        .input-label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #5e35b1;
+            font-size: 1.1rem;
+        }
+        
+        .input-label i {
+            margin-right: 10px;
+            font-size: 1.2em;
+            color: #7e57c2;
+        }
+        
+        .input-field {
+            position: relative;
+        }
+        
+        input {
+            width: 100%;
+            padding: 16px 16px 16px 50px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            color: #2c3e50;
+            background: #f8f9fa;
+            transition: all 0.3s;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #7e57c2;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(126, 87, 194, 0.2);
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+            font-size: 1.3rem;
+        }
+        
+        .input-hint {
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            margin-top: 8px;
+            margin-left: 5px;
+            display: block;
+        }
+        
+        .card-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 18px;
+        }
+        
+        .card-option {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 16px;
+            padding: 20px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .card-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: #e0e0e0;
+            transition: all 0.4s;
+        }
+        
+        .card-option:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+            border-color: #7e57c2;
+        }
+        
+        .card-option:hover::before {
+            background: #7e57c2;
+        }
+        
+        .card-option.active {
+            background: linear-gradient(to bottom, white, #f8f4ff);
+            border-color: #7e57c2;
+            transform: translateY(-6px);
+            box-shadow: 0 15px 25px rgba(126, 87, 194, 0.2);
+        }
+        
+        .card-option.active::before {
+            background: linear-gradient(to right, #7e57c2, #5e35b1);
+        }
+        
+        .card-option h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .card-option p {
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .custom-days {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            margin: 32px 0;
+        }
+        
+        .generate-btn {
+            background: linear-gradient(to right, #7e57c2, #26a69a);
+            color: white;
+            flex: 1;
+            padding: 20px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.4s;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 1px;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.25);
+            background: linear-gradient(to right, #673ab7, #1d9489);
+        }
+        
+        .generate-btn i {
+            margin-right: 12px;
+            font-size: 1.4em;
+        }
+        
+        .reset-btn {
+            background: #f8f9fa;
+            color: #7f8c8d;
+            padding: 20px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            border: 2px solid #e9ecef;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 0.5;
+        }
+        
+        .reset-btn:hover {
+            background: #f1f3f5;
+            border-color: #ced4da;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .result-container {
+            background: linear-gradient(to bottom, #f0f4ff, #e8f4fc);
+            border: 2px solid #7e57c2;
+            border-radius: 18px;
+            padding: 28px;
+            margin-top: 25px;
+            display: none;
+            box-shadow: 0 10px 25px rgba(126, 87, 194, 0.15);
+        }
+        
+        .result-container.active {
+            display: block;
+            animation: fadeIn 0.7s;
+        }
+        
+        .result-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        
+        .result-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #5e35b1;
+        }
+        
+        .result-content {
+            font-family: 'Courier New', monospace;
+            font-size: 1.05rem;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            line-height: 1.7;
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 25px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .copy-btn {
+            background: linear-gradient(to right, #7e57c2, #ff7043);
+            color: white;
+            width: 100%;
+            padding: 18px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.4s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(126, 87, 194, 0.3);
+        }
+        
+        .copy-btn i {
+            margin-right: 12px;
+            font-size: 1.3em;
+        }
+        
+        .copy-btn:hover {
+            background: linear-gradient(to right, #673ab7, #e64a19);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(126, 87, 194, 0.4);
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            color: white;
+            padding: 18px 45px;
+            border-radius: 50px;
+            font-weight: bold;
+            box-shadow: 0 12px 30px rgba(46, 204, 113, 0.4);
+            opacity: 0;
+            transition: all 0.5s;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .toast.error {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+            box-shadow: 0 12px 30px rgba(231, 76, 60, 0.4);
+        }
+        
+        .toast i {
+            margin-right: 12px;
+            font-size: 1.4em;
+        }
+        
+        .info-panel {
+            background: #fff9eb;
+            border-radius: 16px;
+            padding: 22px;
+            margin-top: 30px;
+            border-left: 5px solid #ff9800;
+        }
+        
+        .info-title {
+            font-weight: 700;
+            color: #d35400;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+        }
+        
+        .info-title i {
+            margin-right: 10px;
+            font-size: 1.3em;
+        }
+        
+        .info-content {
+            font-size: 1rem;
+            color: #7f8c8d;
+            line-height: 1.7;
+        }
+        
+        .info-content ul {
+            padding-left: 25px;
+            margin-top: 10px;
+        }
+        
+        .info-content li {
+            margin-bottom: 12px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .success-badge {
+            background: #2ecc71;
+            color: white;
+            border-radius: 20px;
+            padding: 6px 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-left: 15px;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .success-badge i {
+            margin-right: 6px;
+            font-size: 1.1em;
+        }
+        
+        .key-display {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f4ff;
+            border-radius: 12px;
+            border: 1px dashed #7e57c2;
+        }
+        
+        .key-display span {
+            font-weight: 600;
+            color: #5e35b1;
+            margin-right: 10px;
+        }
+        
+        .key-display input {
+            flex: 1;
+            padding: 12px;
+            font-size: 1rem;
+            background: white;
+        }
+        
+        @media (max-width: 500px) {
+            .container {
+                padding: 25px 20px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 1.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-key"></i> 专业授权码生成器</h1>
+            <p class="description">安全、高效地生成软件授权码，支持多种授权类型</p>
+        </header>
+        
+        <div class="input-group">
+            <div class="input-label">
+                <i class="fas fa-paste"></i> 粘贴时间ID和安卓ID
+            </div>
+            <div class="input-field">
+                <i class="fas fa-id-card input-icon"></i>
+                <input type="text" id="raw-input" placeholder="粘贴时间ID和安卓ID..." value="时间ID:20250713111419 安卓ID:86b34726403cfeaf">
+            </div>
+            <span class="input-hint">粘贴后自动提取时间ID</span>
+        </div>
+        
+        <div class="input-group">
+            <div class="input-label">
+                <i class="fas fa-clock"></i> 提取的时间ID
+            </div>
+            <div class="input-field">
+                <i class="fas fa-calendar-day input-icon"></i>
+                <input type="text" id="time-id" placeholder="提取的时间ID将显示在这里" readonly>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <div class="input-label">
+                <i class="fas fa-calendar-alt"></i> 授权期限类型
+            </div>
+            <div class="card-options">
+                <div class="card-option" data-days="7">
+                    <h3>周卡</h3>
+                    <p>7天有效期</p>
+                </div>
+                <div class="card-option" data-days="30">
+                    <h3>月卡</h3>
+                    <p>30天有效期</p>
+                </div>
+                <div class="card-option active" data-days="90">
+                    <h3>季卡</h3>
+                    <p>90天有效期</p>
+                </div>
+                <div class="card-option" data-days="365">
+                    <h3>年卡</h3>
+                    <p>365天有效期</p>
+                </div>
+                <div class="card-option" data-days="36500">
+                    <h3>永久卡</h3>
+                    <p>永久有效</p>
+                </div>
+                <div class="card-option" data-days="1">
+                    <h3>自定义</h3>
+                    <p><input type="number" id="custom-days" class="custom-days" min="1" max="36500" placeholder="天数" value="1"> 天</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="key-display">
+            <span>密钥：</span>
+            <input type="text" id="secret-key" value="12345678" placeholder="输入密钥">
+        </div>
+        
+        <div class="action-buttons">
+            <button class="generate-btn" id="generate-btn">
+                <i class="fas fa-bolt"></i> 生成授权码
+            </button>
+            <button class="reset-btn" id="reset-btn">
+                <i class="fas fa-redo"></i> 重置
+            </button>
+        </div>
+        
+        <div class="result-container" id="result-container">
+            <div class="result-header">
+                <h3 class="result-title">生成的授权码 <span class="success-badge"><i class="fas fa-check"></i> 已生成</span></h3>
+            </div>
+            <div class="result-content" id="result-key">
+                等待生成...
+            </div>
+            <button class="copy-btn" id="copy-btn">
+                <i class="fas fa-copy"></i> 复制授权码
+            </button>
+        </div>
+        
+        <div class="info-panel">
+            <h4 class="info-title"><i class="fas fa-info-circle"></i> 使用说明</h4>
+            <div class="info-content">
+                <ul>
+                    <li>在顶部输入框粘贴完整的时间ID和安卓ID字符串</li>
+                    <li>粘贴后自动提取时间ID</li>
+                    <li>选择需要的授权卡类型（周卡/月卡/季卡/年卡/永久卡/自定义）</li>
+                    <li>默认密钥为"12345678"，可修改</li>
+                    <li>点击【生成授权码】按钮生成授权码</li>
+                    <li>使用【复制授权码】按钮复制结果</li>
+                    <li>算法基于DES-ECB加密标准</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"><i class="fas fa-check-circle"></i> 授权码已复制到剪贴板！</div>
+    
+    <script>
+        // 获取DOM元素
+        const generateBtn = document.getElementById('generate-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const toast = document.getElementById('toast');
+        const rawInput = document.getElementById('raw-input');
+        const timeIdInput = document.getElementById('time-id');
+        const customDaysInput = document.getElementById('custom-days');
+        const secretKeyInput = document.getElementById('secret-key');
+        const resultKey = document.getElementById('result-key');
+        const resultContainer = document.getElementById('result-container');
+        const cardOptions = document.querySelectorAll('.card-option');
+        const customOption = document.querySelector('.card-option[data-days="1"]');
+        
+        // 当前选中授权类型（默认季卡）
+        let selectedDays = 90;
+        
+        // 当前提取的时间ID
+        let extractedTimeId = "";
+        
+        // 初始化卡片选项
+        cardOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                // 移除所有active类
+                cardOptions.forEach(opt => opt.classList.remove('active'));
+                
+                // 添加active到当前选项
+                option.classList.add('active');
+                
+                // 更新选中的天数
+                if(option.dataset.days !== "1") {
+                    selectedDays = parseInt(option.dataset.days);
+                } else {
+                    // 如果是自定义选项，使用输入值
+                    selectedDays = customDaysInput.value ? parseInt(customDaysInput.value) : 1;
+                }
+                
+                // 如果已经提取了时间ID，自动更新到期时间
+                if (extractedTimeId) {
+                    updateExpirationDate();
+                }
+            });
+        });
+        
+        // 自定义天数输入事件
+        customDaysInput.addEventListener('input', () => {
+            if (customOption.classList.contains('active')) {
+                selectedDays = customDaysInput.value ? parseInt(customDaysInput.value) : 1;
+                
+                // 如果已经提取了时间ID，自动更新到期时间
+                if (extractedTimeId) {
+                    updateExpirationDate();
+                }
+            }
+        });
+        
+        // 自动提取时间ID
+        rawInput.addEventListener('input', function() {
+            const inputValue = this.value.trim();
+            const timeIdMatch = inputValue.match(/\d{14}/);
+            
+            if (timeIdMatch) {
+                extractedTimeId = timeIdMatch[0];
+                timeIdInput.value = extractedTimeId;
+                showToast(`已自动提取时间ID: ${extractedTimeId}`);
+                
+                // 自动更新到期时间
+                updateExpirationDate();
+            }
+        });
+        
+        // 更新到期时间显示
+        function updateExpirationDate() {
+            if (!extractedTimeId) return;
+            
+            // 计算到期时间
+            const expiration = calculateExpiration(extractedTimeId);
+            
+            // 在界面上显示计算后的到期时间
+            showToast(`到期时间已更新: ${formatDateForDisplay(expiration)}`);
+        }
+        
+        // 格式化日期显示
+        function formatDateForDisplay(dateStr) {
+            if (dateStr.length !== 14) return dateStr;
+            
+            return `${dateStr.substring(0,4)}-${dateStr.substring(4,6)}-${dateStr.substring(6,8)} ${dateStr.substring(8,10)}:${dateStr.substring(10,12)}:${dateStr.substring(12,14)}`;
+        }
+        
+        // 计算到期时间
+        function calculateExpiration(timeId) {
+            // 从时间ID解析基础时间
+            const baseTime = new Date(
+                parseInt(timeId.substring(0, 4)), // 年
+                parseInt(timeId.substring(4, 6)) - 1, // 月
+                parseInt(timeId.substring(6, 8)), // 日
+                parseInt(timeId.substring(8, 10)), // 时
+                parseInt(timeId.substring(10, 12)), // 分
+                parseInt(timeId.substring(12, 14)) // 秒
+            );
+            
+            // 计算到期时间
+            const expiration = new Date(baseTime);
+            expiration.setDate(expiration.getDate() + selectedDays);
+            
+            // 如果是永久卡（100年）
+            if (selectedDays === 36500) {
+                expiration.setFullYear(expiration.getFullYear() + 100);
+            }
+            
+            // 格式化日期为YYYYMMDDHHmmss
+            const pad = n => n.toString().padStart(2, '0');
+            return expiration.getFullYear() + 
+                   pad(expiration.getMonth() + 1) + 
+                   pad(expiration.getDate()) + 
+                   pad(expiration.getHours()) + 
+                   pad(expiration.getMinutes()) + 
+                   pad(expiration.getSeconds());
+        }
+        
+        // DES加密函数
+        function encryptDES(plaintext, key) {
+            try {
+                // 处理密钥（确保8字节）
+                let keyStr = key;
+                if (keyStr.length < 8) {
+                    keyStr = keyStr.padEnd(8, '\0');
+                } else if (keyStr.length > 8) {
+                    keyStr = keyStr.substring(0, 8);
+                }
+                
+                const keyHex = CryptoJS.enc.Utf8.parse(keyStr);
+                
+                // 使用DES-ECB加密
+                const encrypted = CryptoJS.DES.encrypt(
+                    CryptoJS.enc.Utf8.parse(plaintext), 
+                    keyHex,
+                    {
+                        mode: CryptoJS.mode.ECB,
+                        padding: CryptoJS.pad.Pkcs7
+                    }
+                );
+                
+                return encrypted.ciphertext.toString(CryptoJS.enc.Hex);
+            } catch (e) {
+                console.error('DES加密错误:', e);
+                showToast('加密错误: ' + e.message, 'error');
+                return '';
+            }
+        }
+        
+        // 生成完整授权码
+        function generateAuthCode() {
+            const timeId = extractedTimeId || timeIdInput.value.trim();
+            const secretKey = secretKeyInput.value.trim();
+            
+            // 验证输入
+            if (!timeId || !/^\d{14}$/.test(timeId)) {
+                showToast('请输入有效的时间ID (14位数字)', 'error');
+                return;
+            }
+            
+            if (!secretKey) {
+                showToast('请输入密钥', 'error');
+                return;
+            }
+            
+            try {
+                // 计算到期时间
+                const expiration = calculateExpiration(timeId);
+                
+                // DES加密组合数据
+                const combinedData = timeId + expiration + secretKey;
+                const encryptedPart = encryptDES(combinedData, secretKey);
+                
+                // 确保加密结果长度为64字符
+                const paddedEncrypted = encryptedPart.padEnd(64, '0').substring(0, 64);
+                
+                // 添加固定后缀
+                const suffix = 'cc55cda07f1c8f7a';
+                const authCode = paddedEncrypted + suffix;
+                
+                // 显示结果
+                resultKey.textContent = authCode;
+                resultContainer.classList.add('active');
+                
+                // 自动滚动到结果区域
+                resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+                // 复制到剪贴板
+                copyToClipboard(authCode);
+            } catch (e) {
+                showToast('生成失败: ' + e.message, 'error');
+            }
+        }
+        
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('授权码已复制到剪贴板！');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                showToast('复制失败，请手动复制', 'error');
+            });
+        }
+        
+        // 重置表单
+        function resetForm() {
+            rawInput.value = "时间ID:20250713111419 安卓ID:86b34726403cfeaf";
+            timeIdInput.value = "";
+            extractedTimeId = "";
+            secretKeyInput.value = "12345678";
+            selectedDays = 90;
+            resultContainer.classList.remove('active');
+            
+            // 重置卡片选项选择
+            cardOptions.forEach(opt => opt.classList.remove('active'));
+            document.querySelector('.card-option[data-days="90"]').classList.add('active');
+            customDaysInput.value = "1";
+            
+            // 触发自动提取
+            rawInput.dispatchEvent(new Event('input'));
+            
+            showToast('表单已重置');
+        }
+        
+        // 显示提示信息
+        function showToast(message, type = 'success') {
+            toast.innerHTML = type === 'error' 
+                ? `<i class="fas fa-exclamation-triangle"></i> ${message}` 
+                : `<i class="fas fa-check-circle"></i> ${message}`;
+                
+            toast.className = 'toast';
+            toast.classList.add(type === 'error' ? 'error' : 'show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show', 'error');
+            }, 3000);
+        }
+        
+        // 绑定按钮事件
+        generateBtn.addEventListener('click', generateAuthCode);
+        copyBtn.addEventListener('click', () => {
+            if (resultKey.textContent && resultContainer.classList.contains('active')) {
+                copyToClipboard(resultKey.textContent);
+            }
+        });
+        resetBtn.addEventListener('click', resetForm);
+        
+        // 页面加载时自动提取时间ID
+        window.addEventListener('load', () => {
+            rawInput.dispatchEvent(new Event('input'));
+        });
+    </script>
+</body>
+</html>
